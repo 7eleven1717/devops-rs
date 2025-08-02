@@ -1,0 +1,109 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+  build:
+    permissions:
+      contents: write
+      packages: write
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
+          - aarch64-apple-darwin
+        include:
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - target: aarch64-apple-darwin
+            runner: 'macos-latest'
+        exclude:
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest 
+          - target: aarch64-apple-darwin
+            runner: ${{ vars.NATIVE_RUNNER == 'true' && 'ubuntu-latest' || 'macos-latest' }}
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: denoland/setup-deno@v2
+
+      # https://github.com/actions/cache/blob/main/examples.md#deno 
+      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.name }}-${{ matrix.target }}-build
+          path: |
+            ~/.cache/deno
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+
+      - uses: actions/checkout@v4
+
+      - name: Install cross
+        if: ${{ runner.os == 'Linux' && matrix.target != 'x86_64-unknown-linux-gnu' }}
+        run: ./scripts/ci.ts install-cross
+
+      - name: Pull or build and push docker image for macOS
+        if: ${{ runner.os == 'Linux' && matrix.target == 'aarch64-apple-darwin' }}
+        run: ./scripts/ci.ts aarch64-apple-darwin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'cargo' || 'cross' }} build \
+            --verbose \
+            --release \
+            --target ${{ matrix.target }}
+
+      - name: Build (Mac and Windows runners)
+        if: ${{ runner.os != 'Linux' }}
+        run: cargo build --verbose --release --target ${{ matrix.target }}
+
+      - name: Test
+        if: ${{ runner.os == 'Linux' && matrix.target != 'aarch64-apple-darwin' }}
+        run: |
+          ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'cargo' || 'cross' }} test \
+            --verbose \
+            --release \
+            --target ${{ matrix.target }}
+
+      - name: Test (Mac and Windows runners)
+        if: ${{ runner.os != 'Linux' }}
+        run: |
+          cargo test --verbose --release --target ${{ matrix.target }}
+
+      - name: Find bin paths
+        id: find_bin_paths
+        run: |
+          echo 'paths<<EOF' >> $GITHUB_OUTPUT
+          find target/${{ matrix.target }}/release -maxdepth 1 -type f -perm -111 >>$GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ steps.find_bin_paths.outputs.paths }}
+          retention-days: 1

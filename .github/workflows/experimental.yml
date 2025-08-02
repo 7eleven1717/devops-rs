@@ -1,0 +1,68 @@
+name: experimental
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Select a job to run"
+        required: true
+        type: choice
+        options:
+          - experimental_job1
+          - cache
+
+jobs:
+  cache:
+    if: ${{ github.event.inputs.job == 'cache' }}
+    permissions:
+      contents: write
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.arch }}-${{ runner.os }}-test
+          path: |
+            # ~/.cache/deno
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+      - run: deno install --config ./scripts/deno.json
+      - run: ./scripts/ci.ts install-cross
+  experimental_job1:
+    if: ${{ github.event.inputs.job == 'experimental_job1' }}
+    permissions:
+      contents: write
+      packages: write
+    strategy:
+      matrix:
+        target:
+          # - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
+          # - aarch64-apple-darwin
+        include:
+          # - target: x86_64-unknown-linux-gnu
+          #   runner: ubuntu-latest
+          - target: x86_64-pc-windows-gnu
+            runner: ubuntu-latest
+          #   runner: ubuntu-latest
+          # - target: aarch64-apple-darwin
+          #   runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+
+      - name: Add mingw-w64 for Windows
+        if: ${{ startsWith(matrix.runner, 'ubuntu') && matrix.target == 'x86_64-pc-windows-gnu' }} 
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: mingw-w64
+
+      - name: Add Windows target
+        if: ${{ startsWith(matrix.runner, 'ubuntu') && matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: rustup target add x86_64-pc-windows-gnu
