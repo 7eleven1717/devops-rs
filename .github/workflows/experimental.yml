@@ -1,0 +1,56 @@
+name: experimental
+
+on:
+  workflow_dispatch:
+    inputs:
+      boolean_value:
+        type: boolean
+      job:
+        description: "Select a job to run"
+        required: true
+        type: choice
+        options:
+          - check_inputs_type
+          - experimental_job1
+          - cache
+          - hash
+
+jobs:
+  check_inputs_type:
+    if: ${{ github.event.inputs.job == 'check_inputs_type' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo ${{ true == 'true' }}
+          echo ${{ false == 'false' }}
+          echo ${{ '' == false }}
+          echo ${{ inputs.boolean_value }}
+          echo ${{ github.event.inputs.boolean_value }}
+  hash:
+    if: ${{ github.event.inputs.job == 'hash' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Out chache key
+        run: |
+          echo "key=version-bump-$(echo ${{ hashFiles('scripts/deno.json') }} | cut -c 1-7)" >> $GITHUB_OUTPUT
+  cache:
+    if: ${{ github.event.inputs.job == 'cache' }}
+    permissions:
+      contents: write
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.arch }}-${{ runner.os }}-test
+          path: |
+            ~/.cache/deno
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+      - run: deno install --config ./scripts/deno.json

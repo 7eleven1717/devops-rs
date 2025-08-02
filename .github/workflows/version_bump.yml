@@ -1,0 +1,45 @@
+# This workflow is referenced from Deno's version bump workflow.
+# https://github.com/denoland/deno/blob/main/.github/workflows/version_bump.yml
+
+name: version_bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseKind:
+        description: "Kind of version bump"
+        default: none
+        required: true
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+jobs:
+  version_bump:
+    permissions:
+      contents: write
+      pull-requests: write
+    name: version bump
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/release-tools
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run version bump
+        id: bump_version
+        run: |
+          ./scripts/release/01_bump_version.ts ${{ inputs.releaseKind && inputs.releaseKind != 'none' && format('--releasekind {0}', inputs.releaseKind) || '' }}
+
+      - name: Create PR
+        run: ./scripts/release/02_create_pr.ts --version ${{ steps.bump_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
