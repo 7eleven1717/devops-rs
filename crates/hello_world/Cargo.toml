@@ -1,0 +1,21 @@
+[package]
+name = "hello_world"
+description = "A simple hello world crate for demonstration purposes."
+publish.workspace = true
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "hello_world"
+path = "src/main.rs"
+[[bin]]
+name = "hello_world2"
+path = "src/bin.rs"
+
+[dependencies]
+# clap.workspace = true
+# tokio.workspace = true
+
+[features]
+default = []

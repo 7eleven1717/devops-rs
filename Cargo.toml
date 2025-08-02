@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.dependencies]
+clap = { version = "4.5.30", features = ["derive"] }
+tokio = { version = "1.43.0", features = ["full"] }
+axum = { version = "0.8.4" }
+
+[workspace.package]
+version = "0.0.2"
+publish = false
+edition = "2024"
+repository = "https://github.com/7eleven1717/devops-rs"

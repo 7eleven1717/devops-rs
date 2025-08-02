@@ -1,0 +1,28 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/rust": {},
+    "ghcr.io/devcontainers-community/features/deno": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-github-actions",
+        "SanjulaGanepola.github-local-actions",
+        "MS-vsliveshare.vsliveshare",
+        "tamasfe.even-better-toml",
+        "rust-lang.rust-analyzer",
+        "denoland.vscode-deno"
+      ],
+      "settings": {
+        "githubLocalActions.actCommand": "gh act"
+      }
+    }
+  },
+  // https://code.visualstudio.com/docs/devcontainers/create-dev-container#_rebuild
+  "postCreateCommand": "sudo ./scripts/post_create_command.ts"
+}
