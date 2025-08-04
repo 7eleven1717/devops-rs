@@ -29,7 +29,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo ${{ inputs.releaseKind }}
+      # https://stackoverflow.com/a/76690393
+      - name: Set git config
+        run: |
+          git config --local user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+          git config --local user.name "$(gh api /users/${GITHUB_ACTOR} | jq .name -r)"
+          git config -l
 
       - uses: actions/checkout@v4
         with:
@@ -63,9 +68,16 @@ jobs:
       - uses: denoland/setup-deno@v2
 
       - name: Run version bump
+        id: bump_version
         run: |
           if [ -z "${{ inputs.releaseKind }}" ] || [ "${{ inputs.releaseKind }}" = "none" ]; then
-            ./scripts/bump_version.ts
+            ./scripts/release/01_bump_version.ts
           else
-            ./scripts/bump_version.ts --releaseKind ${{ inputs.releaseKind }}
+            ./scripts/release/01_bump_version.ts --releaseKind ${{ inputs.releaseKind }}
           fi
+
+      - name: Create PR
+        run: ./scripts/release/02_create_pr.ts --tag ${{ steps.bump_version.outputs.tag }}
+
+      - name: Create Tag
+        run: ./scripts/release/03_create_tag.ts --tag ${{ steps.bump_version.outputs.tag }}
