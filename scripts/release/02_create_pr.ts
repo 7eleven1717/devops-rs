@@ -8,16 +8,21 @@ import { $ } from "jsr:@david/dax";
 import { parseArgs } from "jsr:@std/cli";
 import { parse as parseSemver } from "jsr:@std/semver";
 
+type Args = { version: string };
+const { version } = parseArgs<Args>(Deno.args);
+
+// Ensure the version is valid semver format
+parseSemver(version);
+if (version.startsWith("v")) {
+	$.logError("Version should not start with 'v'.");
+	Deno.exit(1);
+}
+
 const auth = Deno.env.get("GITHUB_TOKEN");
 if (!auth) {
 	$.logError("GITHUB_TOKEN is not set.");
 	Deno.exit(1);
 }
-
-type Args = { version: string };
-const { version } = parseArgs<Args>(Deno.args);
-// Ensure the version is valid semver format
-parseSemver(version);
 
 const originalBranch = await $`git branch --show-current`.text();
 // https://github.com/denoland/deno/blob/c86e277fc1e0795f3602981e36c690e1abfbfe49/tools/release/02_create_pr.ts#L12

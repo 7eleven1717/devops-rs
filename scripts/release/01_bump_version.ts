@@ -7,7 +7,7 @@ import { $ } from "jsr:@david/dax";
 import { parseArgs } from "jsr:@std/cli";
 
 type Args = { releaseKind?: "major" | "minor" | "patch"; dryRun?: boolean };
-const { releaseKind, dryRun = false } = parseArgs<Args>(Deno.args);
+const { releaseKind } = parseArgs<Args>(Deno.args);
 const bump = releaseKind || "";
 
 $.logStep("Getting bumped version...");
@@ -28,7 +28,5 @@ if (githubOutput) {
   await $`echo "version=${bumpedVersion}" >> ${githubOutput}`;
 }
 
-if (!dryRun) {
-  $.logStep("Bumping version...");
-  await $`cargo set-version ${bumpedVersion}`;
-}
+$.logStep("Bumping version...");
+await $`cargo set-version ${bumpedVersion}`;
