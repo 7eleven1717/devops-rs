@@ -1,0 +1,36 @@
+name: release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      version:
+        required: false
+        type: string
+jobs:
+  release:
+    needs: [tag]
+    uses: ./.github/workflows/ci.yml
+    with:
+      release: true
+  tag:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release_') || inputs.version
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/version-tools
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tag from release branch
+        if: github.event.pull_request.head.ref
+        run: ./scripts/release/03_create_tag.ts --releaseBranch ${{ github.event.pull_request.head.ref }}
+
+      - name: Create tag with version
+        if: inputs.version
+        run: ./scripts/release/03_create_tag.ts --version ${{ inputs.version }}

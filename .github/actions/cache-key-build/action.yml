@@ -1,0 +1,18 @@
+name: 'Build Cache Key'
+description: 'For build cache key'
+inputs:
+  target:
+    description: 'Target triple'
+    required: true
+    type: string
+outputs:
+  key:
+    description: "cache key"
+    value: ${{ steps.key.outputs.key }}
+runs:
+  using: "composite"
+  steps:
+    - name: Out build cache key
+      id: key
+      shell: bash
+      run: HASH=${{ hashFiles('Cargo.lock') }}; echo "key=${{ inputs.target }}-build-${HASH:0:7}" >> $GITHUB_OUTPUT
