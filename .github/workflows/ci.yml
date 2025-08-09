@@ -2,8 +2,6 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   pull_request:
@@ -14,6 +12,44 @@ on:
         type: boolean
 
 jobs:
+  release:
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release == 'true'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+
+      - name: Out chache key
+        id: cache_key
+        run: HASH=${{ hashFiles('scripts/deno.lock') }}; echo "key=version-bump-${HASH:0:7}" >> $GITHUB_OUTPUT
+
+      # https://github.com/actions/cache/blob/main/examples.md#deno 
+      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.cache_key.outputs.key }}
+          path: |
+            ~/.deno
+            ~/.cache/deno
+            ~/.cargo
+
+      - name: Create release notes
+        id: create_release_notes
+        run: ./scripts/release/05_create_release_notes.ts
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+
+      - name: Upload release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.{zip,sha256sum}'
+          body: ${{ steps.create_release_notes.outputs.body }}
+
   build:
     permissions:
       contents: read
@@ -38,22 +74,26 @@ jobs:
             arch: aarch64
     runs-on: ${{ matrix.runner }}
     env:
-      release: ${{ startsWith(github.ref, 'refs/tags/v') || github.event.inputs.release }}
+      release: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release == 'true' }}
     steps:
       - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+
+      - name: Out cache key
+        id: cache_key
+        shell: bash
+        run: HASH=${{ hashFiles('Cargo.lock') }}; echo "key=${{ matrix.target }}-build-${HASH:0:7}" >> $GITHUB_OUTPUT
 
       # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
       - name: Restore build cache
         uses: actions/cache@v4
         with:
-          key: ${{ matrix.target }}-build
+          key: ${{ steps.cache_key.outputs.key }}
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-
-      - uses: actions/checkout@v4
 
       - name: Build
         run: cargo build --verbose --release --target ${{ matrix.target }}
@@ -70,7 +110,7 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Pre-release
-        if: env.release
+        if: env.release == 'true'
         id: pre_release
         run: deno run -A ./scripts/release/04_prepare_release_files.ts
         env:
@@ -81,5 +121,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-${{ matrix.os }}-${{ matrix.arch }}${{ github.event_name == 'pull_request' && join('-', github.event.pull_request.number) || '' }}
-          path: ${{ env.release && steps.pre_release.outputs.paths || steps.find_bin_paths.outputs.paths }}
+          path: ${{ env.release == 'true' && steps.pre_release.outputs.paths || steps.find_bin_paths.outputs.paths }}
           retention-days: 1
