@@ -2,8 +2,6 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   pull_request:
@@ -14,6 +12,39 @@ on:
         type: boolean
 
 jobs:
+  release:
+    needs: [build]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || github.event.inputs.release }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      # https://github.com/actions/cache/blob/main/examples.md#deno 
+      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-version-bump
+          path: |
+            ~/.deno
+            ~/.cache/deno
+            ~/.cargo
+      - uses: denoland/setup-deno@v2
+      - uses: actions/checkout@v4
+
+      - name: Create release notes
+        id: create_release_notes
+        run: ./scripts/release/05_create_release_notes.ts
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+
+      - name: Upload release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.{zip,sha256sum}'
+          body: ${{ steps.create_release_notes.outputs.body }}
+
   build:
     permissions:
       contents: read
