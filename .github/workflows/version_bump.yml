@@ -9,7 +9,7 @@ on:
       releaseKind:
         description: "Kind of version bump"
         default: none
-        required: false
+        required: true
         type: choice
         options:
           - none
@@ -18,57 +18,28 @@ on:
           - major
 
 jobs:
-  build:
+  version_bump:
     permissions:
       contents: write
+      pull-requests: write
     name: version bump
     runs-on: ubuntu-latest
 
     steps:
-      - uses: denoland/setup-deno@v2
-
-      # https://github.com/actions/cache/blob/main/examples.md#deno 
-      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
-      - name: Restore cache
-        uses: actions/cache@v4
-        if: ${{ always() }}
-        with:
-          key: ${{ runner.os }}-version-bump
-          path: |
-            ~/.deno
-            ~/.cache/deno
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-
-      # https://stackoverflow.com/a/76690393
-      - name: Set git config
-        run: |
-          git config --local user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
-          git config --local user.name "$(gh api /users/${GITHUB_ACTOR} | jq .name -r)"
-          git config -l
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for accurate version bumping
 
-      - name: Setup tools
-        run: |
-          deno install --config ./scripts/deno.json
-          ./scripts/release/install_tools.ts
+      - uses: ./.github/actions/release-tools
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run version bump
         id: bump_version
         run: |
-          if [ -z "${{ inputs.releaseKind }}" ] || [ "${{ inputs.releaseKind }}" = "none" ]; then
-            ./scripts/release/01_bump_version.ts
-          else
-            ./scripts/release/01_bump_version.ts --releaseKind ${{ inputs.releaseKind }}
-          fi
+          ./scripts/release/01_bump_version.ts ${{ inputs.releaseKind && inputs.releaseKind != 'none' && format('--releasekind {0}', inputs.releaseKind) || '' }}
 
       - name: Create PR
         run: ./scripts/release/02_create_pr.ts --version ${{ steps.bump_version.outputs.version }}
-
-      - name: Create Tag
-        run: ./scripts/release/03_create_tag.ts --version ${{ steps.bump_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
