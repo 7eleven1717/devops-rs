@@ -5,6 +5,7 @@
 
 import { $ } from "@david/dax";
 import { parseArgs } from "@std/cli";
+import * as core from "@actions/core";
 
 type Args = { releaseKind?: "major" | "minor" | "patch"; dryRun?: boolean };
 const { releaseKind } = parseArgs<Args>(Deno.args);
@@ -23,10 +24,7 @@ if (result.stderr.includes("There is nothing to bump.")) {
 
 const bumpedVersion = result.stdout.replace(/\r?\n$/, "").slice(1);
 
-const githubOutput = Deno.env.get("GITHUB_OUTPUT");
-if (githubOutput) {
-  await $`echo "version=${bumpedVersion}" >> ${githubOutput}`;
-}
-
 $.logStep("Bumping version...");
 await $`cargo set-version ${bumpedVersion}`;
+
+core.setOutput("version", bumpedVersion);
