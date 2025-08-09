@@ -1,0 +1,19 @@
+name: tagging
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release_') || github.event.inputs.release == 'true'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/version-tools
+      - run: git log -3 --format=%B

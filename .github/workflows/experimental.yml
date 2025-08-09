@@ -10,8 +10,17 @@ on:
         options:
           - experimental_job1
           - cache
+          - hash
 
 jobs:
+  hash:
+    if: ${{ github.event.inputs.job == 'hash' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Out chache key
+        run: |
+          echo "key=version-bump-$(echo ${{ hashFiles('scripts/deno.json') }} | cut -c 1-7)" >> $GITHUB_OUTPUT
   cache:
     if: ${{ github.event.inputs.job == 'cache' }}
     permissions:

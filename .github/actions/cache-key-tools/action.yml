@@ -1,0 +1,12 @@
+name: 'Tools Cache Key'
+description: 'For tools cache key'
+outputs:
+  key:
+    description: "cache key"
+    value: ${{ steps.key.outputs.key }}
+runs:
+  using: "composite"
+  steps:
+    - name: Out tools cache key
+      id: key
+      run: HASH=${{ hashFiles('scripts/deno.lock') }}; echo "key=version-bump-${HASH:0:7}" >> $GITHUB_OUTPUT
