@@ -7,17 +7,20 @@ import { $ } from "@david/dax";
 import { parseArgs } from "@std/cli";
 import { parse as parseSemver } from "@std/semver";
 
-type Args = { version: string };
-const { version } = parseArgs<Args>(Deno.args);
+type Args = { version?: string; releaseBranch?: string };
+const { version: rawInputVersion, releaseBranch } = parseArgs<Args>(Deno.args);
+
+const version = rawInputVersion?.replace(/^v/, "") ||
+  releaseBranch?.replace("release_", "").replace(/_/, ".")!;
 
 // Ensure the version is valid semver format
 parseSemver(version);
 
-$.logStep("Creating release tag...");
+$.logStep(`Creating release tag for ${version}...`);
 await createReleaseTag();
 
 async function createReleaseTag() {
-  const tagName = version.startsWith("v") ? version : `v${version}`;
+  const tagName = `v${version}`;
   await $`git fetch origin --tags`;
   const tags = (await $`git tag`.text()).split("\n");
   if (tags.includes(tagName)) {
