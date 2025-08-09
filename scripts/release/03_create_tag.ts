@@ -6,27 +6,32 @@
 import { $ } from "@david/dax";
 import { parseArgs } from "@std/cli";
 import { parse as parseSemver } from "@std/semver";
+import * as core from "@actions/core";
 
-type Args = { version: string };
-const { version } = parseArgs<Args>(Deno.args);
+type Args = { version?: string; releaseBranch?: string };
+const { version: rawInputVersion, releaseBranch } = parseArgs<Args>(Deno.args);
+
+const version = rawInputVersion?.replace(/^v/, "") ||
+  releaseBranch?.replace("release_", "").replace(/_/, ".")!;
 
 // Ensure the version is valid semver format
 parseSemver(version);
+$.logStep(`Creating release tag for ${version}...`);
 
-$.logStep("Creating release tag...");
+const tag = `v${version}`;
 await createReleaseTag();
+core.setOutput("tag", tag);
 
 async function createReleaseTag() {
-  const tagName = version.startsWith("v") ? version : `v${version}`;
   await $`git fetch origin --tags`;
   const tags = (await $`git tag`.text()).split("\n");
-  if (tags.includes(tagName)) {
-    $.log(`Tag ${tagName} already exists.`);
+  if (tags.includes(tag)) {
+    $.log(`Tag ${tag} already exists.`);
   } else {
-    const changeLog = await getChangeLog(tagName);
+    const changeLog = await getChangeLog(tag);
     await $
-      .raw`git tag -a ${tagName} -m "Release ${tagName}" -m "${changeLog}"`;
-    await $`git push origin ${tagName}`;
+      .raw`git tag -a ${tag} -m "Release ${tag}" -m "${changeLog}"`;
+    await $`git push origin ${tag}`;
   }
 }
 
