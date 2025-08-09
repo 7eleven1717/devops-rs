@@ -1,0 +1,47 @@
+name: 'Release Tools'
+inputs:
+  GITHUB_TOKEN:
+    required: true
+    type: string
+runs:
+  using: "composite"
+  steps:
+    # https://stackoverflow.com/a/76690393
+    - name: Set git config
+      shell: bash
+      run: |
+        git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+        git config --global user.name "$(gh api /users/${GITHUB_ACTOR} | jq .name -r)"
+        git config -l
+      env:
+        GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+
+    - uses: denoland/setup-deno@v2
+
+    - name: Out tools cache key
+      shell: bash
+      id: cache_key
+      run: |
+        PREFIX=release-tools-
+        HASH=${{ hashFiles('scripts/release/deno.lock') }}
+        echo "key=${PREFIX}${HASH:0:7}" >> $GITHUB_OUTPUT
+        echo "restore-keys=${PREFIX}" >> $GITHUB_OUTPUT
+
+    # https://github.com/actions/cache/blob/main/examples.md#deno 
+    # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+    - name: Restore cache
+      uses: actions/cache@v4
+      with:
+        key: ${{ steps.cache_key.outputs.key }}
+        restore-keys: ${{ steps.cache_key.outputs.restore-keys }}
+        path: |
+          ~/.deno
+          ~/.cache/deno
+          ~/.cargo
+
+    - name: Setup tools
+      shell: bash
+      run: |
+        deno install --config ./scripts/release/deno.json
+        cargo install cargo-edit
+        cargo install git-cliff
