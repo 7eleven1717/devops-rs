@@ -1,0 +1,35 @@
+name: release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      version:
+        required: false
+        type: string
+jobs:
+  release:
+    needs: [tagging]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ci.yml
+    with:
+      tag: ${{ needs.tagging.outputs.tag }}
+  tagging:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release_') || inputs.version
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.create_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/release-tools
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create tag
+        id: create_tag
+        run: ./scripts/release/03_create_tag.ts ${{ (github.event.pull_request.head.ref && format('--releaseBranch {0}', github.event.pull_request.head.ref)) || (inputs.version && format('--version {0}', inputs.version)) }}
