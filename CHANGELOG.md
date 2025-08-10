@@ -1,7 +1,12 @@
-## What's Changed
+## What's Changed in v0.0.1
 * empty commit by @7eleven1717
 * empty commit by @7eleven1717
 * add cliff.toml by @7eleven1717
+
+## New Contributors
+* @7eleven1717 made their first contribution
+
+**Full Changelog**: https://github.com/7eleven1717/devops-rs/compare/v0.0.0...v0.0.1
 
 ## What's Changed in v0.0.0
 
