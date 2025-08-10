@@ -1,10 +1,18 @@
+## What's Changed in v0.0.2
+* delete artifact/ by @7eleven1717
+
+## New Contributors
+* @7eleven1717 made their first contribution
+
+**Full Changelog**: https://github.com/7eleven1717/devops-rs/compare/v0.0.1...v0.0.2
+
 ## What's Changed in v0.0.1
 * empty commit by @7eleven1717
 * empty commit by @7eleven1717
 * add cliff.toml by @7eleven1717
 
 ## New Contributors
-* @7eleven1717 made their first contribution
+* @github-actions[bot] made their first contribution in [#21](https://github.com/7eleven1717/devops-rs/pull/21)
 
 **Full Changelog**: https://github.com/7eleven1717/devops-rs/compare/v0.0.0...v0.0.1
 
