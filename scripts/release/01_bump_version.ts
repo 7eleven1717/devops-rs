@@ -27,4 +27,8 @@ const bumpedVersion = result.stdout.replace(/\r?\n$/, "").slice(1);
 $.logStep("Bumping version...");
 await $`cargo set-version ${bumpedVersion}`;
 
-core.setOutput("version", bumpedVersion);
+if (Deno.env.get("GITHUB_ACTIONS")) {
+  core.setOutput("version", bumpedVersion);
+} else {
+  console.log(bumpedVersion);
+}

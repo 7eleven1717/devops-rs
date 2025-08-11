@@ -28,15 +28,19 @@ const originalBranch = await $`git branch --show-current`.text();
 // https://github.com/denoland/deno/blob/c86e277fc1e0795f3602981e36c690e1abfbfe49/tools/release/02_create_pr.ts#L12
 const newBranchName = `release_${version.replace(/\./, "_")}`;
 
+$.logStep("Generate CHANGELOG.md...");
+await $.raw`git-cliff --tag v${version} -o`;
+
 $.logStep(`Creating branch ${newBranchName}...`);
 await $`git checkout -b ${newBranchName}`;
 
 $.logStep(`Committing version bump...`);
-await $.raw`git commit -am "${version}"`;
+await $`git add Cargo.toml Cargo.lock **/Cargo.toml`;
+await $`git commit -m ${version}`;
 
 $.logStep(`Update CHANGELOG.md...`);
-await $.raw`git-cliff --tag v${version} -o`;
-await $`git commit -am "Update CHANGELOG.md"`;
+await $`git add CHANGELOG.md`;
+await $`git commit -m "Update CHANGELOG.md"`;
 
 $.logStep("Pushing branch...");
 await $`git push -u origin HEAD`;
