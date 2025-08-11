@@ -34,7 +34,7 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run version bump
+      - name: Bump version
         id: bump_version
         run: |
           ./scripts/release/01_bump_version.ts ${{ inputs.releaseKind && inputs.releaseKind != 'none' && format('--releasekind {0}', inputs.releaseKind) || '' }}

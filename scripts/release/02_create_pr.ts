@@ -31,6 +31,9 @@ const newBranchName = `release_${version.replace(/\./, "_")}`;
 $.logStep(`Creating branch ${newBranchName}...`);
 await $`git checkout -b ${newBranchName}`;
 
+$.logStep("Bumping version...");
+await $`cargo set-version ${version}`;
+
 $.logStep(`Committing version bump...`);
 await $.raw`git commit -am "${version}"`;
 

@@ -23,8 +23,4 @@ if (result.stderr.includes("There is nothing to bump.")) {
 }
 
 const bumpedVersion = result.stdout.replace(/\r?\n$/, "").slice(1);
-
-$.logStep("Bumping version...");
-await $`cargo set-version ${bumpedVersion}`;
-
 core.setOutput("version", bumpedVersion);
