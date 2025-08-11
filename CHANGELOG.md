@@ -1,6 +1,5 @@
 ## What's Changed in v0.0.1
-* Cargo.toml by @7eleven1717
-* delete test.ps1 test.sh by @7eleven1717
+* empty commit
 
 ## New Contributors
 * @7eleven1717 made their first contribution
