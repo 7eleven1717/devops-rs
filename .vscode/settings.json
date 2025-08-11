@@ -4,5 +4,9 @@
     "editor.tabSize": 2,
     "editor.defaultFormatter": "denoland.vscode-deno",
     "editor.formatOnSave": true
+  },
+  "[rust]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
   }
 }

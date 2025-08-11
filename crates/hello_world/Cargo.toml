@@ -8,14 +8,16 @@ repository.workspace = true
 
 [[bin]]
 name = "hello_world"
-path = "src/main.rs"
+path = "src/hello_world.rs"
 [[bin]]
-name = "hello_world2"
-path = "src/bin.rs"
+name = "main"
+path = "src/main.rs"
 
 [dependencies]
-# clap.workspace = true
-# tokio.workspace = true
+axum.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tower-http = { version = "0.6.6", features = ["timeout", "trace"] }
 
 [features]
 default = []
