@@ -1,3 +1,9 @@
+## What's Changed in v0.0.1
+* change condition by @7eleven1717
+* [skip ci]docker by @7eleven1717
+
+**Full Changelog**: https://github.com/7eleven1717/devops-rs/compare/v0.0.0...v0.0.1
+
 ## What's Changed in v0.0.0
 
 ## New Contributors
