@@ -37,7 +37,7 @@ jobs:
       - name: Run version bump
         id: bump_version
         run: |
-          ./scripts/release/01_bump_version.ts ${{ inputs.releaseKind && inputs.releaseKind != 'none' && format('--releasekind {0}', inputs.releaseKind) || '' }}
+          ./scripts/release/01_bump_version.ts ${{ format(inputs.releaseKind && inputs.releaseKind != 'none' && '--releasekind {0}' || '', inputs.releaseKind) }}
 
       - name: Create PR
         run: ./scripts/release/02_create_pr.ts --version ${{ steps.bump_version.outputs.version }}
